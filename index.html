@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Budget Tracking</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      color: #2d3748;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Background Pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Container Wrapper */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header Section */
+    .header-section {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 35px 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    h1 {
+      text-align: center;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 2.5em;
+      font-weight: 700;
+      margin-bottom: 15px;
+      letter-spacing: -0.5px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 25px;
+      flex-wrap: wrap;
+    }
+
+    select {
+      padding: 12px 20px;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      font-size: 15px;
+      background: white;
+      color: #2d3748;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      min-width: 200px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    select:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    button {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    button:hover::before {
+      left: 100%;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(30, 64, 175, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    #lastUpdated {
+      text-align: center;
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 15px;
+      font-weight: 500;
+      padding: 8px 16px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 20px;
+      display: inline-block;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Table Container */
+    .table-container {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 0;
+      background: transparent;
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    th, td {
+      padding: 16px 20px;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+      color: white;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    th:first-child {
+      border-radius: 12px 0 0 0;
+    }
+
+    th:last-child {
+      border-radius: 0 12px 0 0;
+    }
+
+    td {
+      font-size: 14px;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    tbody tr {
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    tbody tr:hover {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.05) 100%);
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .status-ok { 
+      color: #10b981; 
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    .status-over { 
+      color: #ef4444; 
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    /* Chart Container */
+    .chart-container {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 35px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    canvas {
+      margin-top: 20px;
+      max-height: 350px !important;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 40px;
+      padding: 20px;
+      font-weight: 500;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+
+      h1 {
+        font-size: 1.8em;
+      }
+
+      .header-section {
+        padding: 25px 20px;
+      }
+
+      .controls {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      select, button {
+        width: 100%;
+        max-width: 300px;
+      }
+
+      th, td {
+        padding: 12px 10px;
+        font-size: 12px;
+      }
+
+      .table-container, .chart-container {
+        padding: 20px 15px;
+      }
+    }
+
+    /* Loading Animation */
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .loading {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-section">
+      <h1>📊 Dashboard Budget Tracking</h1>
+
+      <div class="controls">
+        <select id="categoryFilter" onchange="filterCategory()">
+          <option value="ALL">Semua Kategori</option>
+        </select>
+        <button onclick="loadTracking()">🔄 Refresh Sekarang</button>
+      </div>
+      <div id="lastUpdated">Terakhir update: -</div>
+    </div>
+
+    <div class="table-container">
+      <table id="trackingTable">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>PO Issued</th>
+            <th>PO Received</th>
+            <th>Budget</th>
+            <th>Sisa Budget</th>
+            <th>% Used</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="budgetChart"></canvas>
+    </div>
+
+    <footer>© 2025 Procurement Alpro</footer>
+  </div>
+
+  <script>
+    const apiUrl = "https://script.google.com/macros/s/AKfycbyUIlt7wS0cd4m_a0fdxJSPnECcB7YiLHl4rPcY8a6eqEKMEkDzVjwbhuXO6VUmbCIQ/exec";
+    let allData = [];
+    let chartInstance = null;
+
+    async function loadTracking() {
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+      allData = data;
+
+      // Update dropdown category
+      const select = document.getElementById("categoryFilter");
+      const uniqueCats = [...new Set(data.map(r => r.Category))];
+      select.innerHTML = '<option value="ALL">Semua Kategori</option>' +
+        uniqueCats.map(c => `<option value="${c}">${c}</option>`).join("");
+
+      renderTableAndChart(data);
+      document.getElementById("lastUpdated").innerText =
+        "Terakhir update: " + new Date().toLocaleString("id-ID");
+    }
+
+    function filterCategory() {
+      const selected = document.getElementById("categoryFilter").value;
+      if (selected === "ALL") {
+        renderTableAndChart(allData);
+      } else {
+        const filtered = allData.filter(r => r.Category === selected);
+        renderTableAndChart(filtered);
+      }
+    }
+
+    function renderTableAndChart(data) {
+      const tbody = document.querySelector("#trackingTable tbody");
+      tbody.innerHTML = "";
+
+      const labels = [];
+      const budgets = [];
+      const receiveds = [];
+      const colors = [];
+
+      data.forEach(row => {
+        const issued = Number(row["PO Issued"]) || 0;
+        const received = Number(row["PO Received"]) || 0;
+        const budget = Number(row["Budget"]) || 0;
+        const usedPercent = received / budget;
+        const sisa = budget - received;
+        const status = usedPercent > 1 ? "⚠️ Over Budget" : "OK";
+        const color = usedPercent > 1
+          ? "rgba(220,53,69,0.9)" // Merah
+          : "rgba(40,167,69,0.9)"; // Hijau
+
+        labels.push(row.Category);
+        budgets.push(budget);
+        receiveds.push(received);
+        colors.push(color);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.Category}</td>
+          <td>${issued.toLocaleString()}</td>
+          <td>${received.toLocaleString()}</td>
+          <td>${budget.toLocaleString()}</td>
+          <td>${sisa.toLocaleString()}</td>
+          <td>${(usedPercent * 100).toFixed(1)}%</td>
+          <td class="${status.includes("Over") ? "status-over" : "status-ok"}">${status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (chartInstance) chartInstance.destroy();
+
+      const ctx = document.getElementById("budgetChart").getContext("2d");
+      chartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "PO Received",
+              data: receiveds,
+              backgroundColor: colors,
+              borderColor: colors.map(c => c.replace("0.9", "1")),
+              borderWidth: 2
+            },
+            {
+              label: "Budget",
+              data: budgets,
+              backgroundColor: "rgba(13,110,253,0.15)",
+              borderColor: "#0d6efd",
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: {
+              display: true,
+              text: 'Perbandingan Budget vs PO Received per Category',
+              font: { size: 16 }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#333', font: { size: 13 } },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 12 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Jalankan pertama kali
+    loadTracking();
+
+    // Auto refresh setiap 10 menit
+    setInterval(loadTracking, 10 * 60 * 1000);
+  </script>
+</body>
+</html>
